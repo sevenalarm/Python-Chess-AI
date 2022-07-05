@@ -125,11 +125,7 @@ class GameState:
                 endSq = (r - 2, c)
                 if b[endSq[0]][endSq[1]] == '--':
                     move = Move((r, c), endSq, b)
-                    gs_copy = GameState()
-                    gs_copy.board = b[:]
-                    gs_copy.makeMove(move)
-                    if not gs_copy.isCheck():
-                        validMoves.append(move)
+                    validMoves.append(move)
 
             # Move 1 square forward
             endSq = (r - 1, c)

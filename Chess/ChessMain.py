@@ -17,14 +17,14 @@ MAX_FPS = 15
 IMAGES = {}
 
 """
-Initialize a global dictionary of images. 
+Initialize a global dictionary of images2. 
 """
 
 
 def loadImages():
     pieces = ['br', 'bn', 'bb', 'bq', 'bk', 'bp', 'wr', 'wn', 'wb', 'wq', 'wk', 'wp']
     for piece in pieces:
-        IMAGES[piece] = p.transform.scale(p.image.load(f'images2/{piece}.png'), (SQ_SIZE, SQ_SIZE))
+        IMAGES[piece] = p.transform.scale(p.image.load(f'./images/{piece}.png'), (SQ_SIZE, SQ_SIZE))
 
 
 """
@@ -58,7 +58,7 @@ def main():
                     move = ChessEngine.Move(selectedSq, (row, col), gs.board)
                     validMoves = gs.getPieceValidMoves(selectedSq[0], selectedSq[1])
                     vals = [m.getChessNotation() for m in validMoves]
-                    print(vals)
+                    # print(vals)
                     if move.getChessNotation() in vals:
                         gs.makeMove(move)
 
