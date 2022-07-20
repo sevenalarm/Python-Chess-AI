@@ -10,13 +10,10 @@ class GameState:
             ['--', '--', '--', '--', '--', '--', '--', '--'],
             ['wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp', 'wp'],
             ['wr', 'wn', 'wb', 'wq', 'wk', 'wb', 'wn', 'wr']]
-
+        self.moveFunctions = {"p": self.getPawnMoves, "r": self.getRookMoves, "n": self.getKnightMoves,
+                              "b": self.getBishopMoves, "q": self.getQueenMoves, "k": self.getKingMoves}
         self.whiteToMove = True
         self.moveLog = []
-        if self.whiteToMove:
-            self.turn = "w"
-        else:
-            self.turn = "b"
 
     def makeMove(self, move):
         self.board[move.startRow][move.startCol] = '--'
@@ -36,360 +33,98 @@ class GameState:
             self.whiteToMove = not self.whiteToMove
 
     """
-    Getting all the valid moves. (Not considering pins, castles, en-passant or checks for now)
+    All moves considering checks
     """
 
-    def getAllValidMoves(self):
-        validMoves = []
-        b = self.board
+    def getValidMoves(self):
+        return self.getAllPossibleMoves()  # for now
 
-        if self.whiteToMove:
-            turn = "w"
-        else:
-            turn = "b"
+    """
+    All moves without considering checks
+    """
 
+    def getAllPossibleMoves(self):
+        moves = []
         for r in range(8):
             for c in range(8):
-                if b[r][c] != '--':
-                    if b[r][c][0] == turn:
+                turn = self.board[r][c][0]
+                if (turn == "w" and self.whiteToMove) or (turn == "b" and not self.whiteToMove):
+                    piece = self.board[r][c][1]
+                    self.moveFunctions[piece](r, c, moves)
 
-                        piece = b[r][c]
+        return moves
 
-                        # Pawn
-                        if piece[1] == "p":
-                            validMoves += self.getPawnMoves(r, c)
-
-                        # Rook
-                        elif piece[1] == "r":
-                            validMoves += self.getRookMoves(r, c)
-
-                        # Knight
-                        elif piece[1] == "n":
-                            validMoves += self.getKnightMoves(r, c)
-
-                        # Bishop
-                        elif piece[1] == "b":
-                            validMoves += self.getBishopMoves(r, c)
-
-                        # Queen
-                        if piece[1] == "q":
-                            validMoves += self.getRookMoves(r, c)
-                            validMoves += self.getBishopMoves(r, c)
-
-                        # King
-                        if piece[1] == "k":
-                            validMoves += self.getKingMoves(r, c)
-
-        return validMoves
-
-    def getPieceValidMoves(self, r, c):
-        piece = self.board[r][c]
+    def getPawnMoves(self, r, c, moves):
         if self.whiteToMove:
-            turn = "w"
-        else:
-            turn = "b"
-
-        if piece[0] != turn:
-            return []
-
-        if piece[1] == "p":
-            return self.getPawnMoves(r, c)
-
-        elif piece[1] == "r":
-            return self.getRookMoves(r, c)
-
-        elif piece[1] == "n":
-            return self.getKnightMoves(r, c)
-
-        elif piece[1] == "b":
-            return self.getBishopMoves(r, c)
-
-        elif piece[1] == "q":
-            return self.getBishopMoves(r, c) + self.getRookMoves(r, c)
-
-        elif piece[1] == "k":
-            return self.getKingMoves(r, c)
-
-    def getPawnMoves(self, r, c):
-        b = self.board
-        if self.whiteToMove:
-            turn = "w"
-        else:
-            turn = "b"
-        validMoves = []
-
-        # White Pawn
-        if turn == "w":
-            # Check if it can move 2 squares
-            if r == 6:
-                endSq = (r - 2, c)
-                if b[endSq[0]][endSq[1]] == '--':
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-
-            # Move 1 square forward
-            endSq = (r - 1, c)
-            if not r - 1 < 0:
-                if b[endSq[0]][endSq[1]] == '--':
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-
-            # Take a piece diagonally
-            endSq = (r - 1, c - 1)
-            if not (r - 1 < 0 or c - 1 < 0):
-                if b[endSq[0]][endSq[1]] != '--':
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-            endSq = (r - 1, c + 1)
-            if not (r - 1 < 0 or c + 1 > 7):
-                if b[endSq[0]][endSq[1]] != '--':
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
+            if r - 1 > -1:  # fix this for pawn promotion !
+                if self.board[r - 1][c] == "--":
+                    moves.append(Move((r, c), (r - 1, c), self.board))
+                    if r == 6 and self.board[r - 2][c] == "--":
+                        moves.append(Move((r, c), (r - 2, c), self.board))
+                if c - 1 >= 0:
+                    if self.board[r - 1][c - 1][0] == 'b':  # enemy piece
+                        moves.append(Move((r, c), (r - 1, c - 1), self.board))
+                if c + 1 <= 7:
+                    if self.board[r - 1][c + 1][0] == 'b':  # enemy piece
+                        moves.append(Move((r, c), (r - 1, c + 1), self.board))
 
         else:
-            # Check if it can move 2 squares
-            if r == 1:
-                endSq = (r + 2, c)
-                if b[endSq[0]][endSq[1]] == '--':
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
+            if r + 1 < 8:  # fix this for pawn promotion !
+                if self.board[r + 1][c] == "--":
+                    moves.append(Move((r, c), (r + 1, c), self.board))
+                    if r == 1 and self.board[r + 2][c] == "--":
+                        moves.append(Move((r, c), (r + 2, c), self.board))
+                if c - 1 >= 0:
+                    if self.board[r + 1][c - 1][0] == 'w':  # enemy piece
+                        moves.append(Move((r, c), (r + 1, c - 1), self.board))
+                if c + 1 <= 7:
+                    if self.board[r + 1][c + 1][0] == 'w':  # enemy piece
+                        moves.append(Move((r, c), (r + 1, c + 1), self.board))
 
-            # Move 1 square forward
-            endSq = (r + 1, c)
-            if not r + 1 > 7:
-                if b[endSq[0]][endSq[1]] == '--':
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
+    def getRookMoves(self, r, c, moves):
+        for dr, dc in [(0, 1), (-1, 0), (0, -1), (1, 0)]:
+            n = 1
+            while 0 <= r+dr*n <= 7 and 0 <= c+dc*n <= 7:
+                newr, newc = r+dr*n, c+dc*n
+                if self.board[newr][newc] == "--":
+                    moves.append(Move((r, c), (newr, newc), self.board))
+                    n+=1
+                else:
+                    if self.board[newr][newc][0] != self.board[r][c][0]:
+                        moves.append(Move((r, c), (newr, newc), self.board))
+                    break
 
-            # Take a piece diagonally
-            endSq = (r + 1, c - 1)
-            if not (r + 1 > 7 or c - 1 < 0):
-                if b[endSq[0]][endSq[1]] != '--':
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-            endSq = (r + 1, c + 1)
-            if not (r + 1 > 7 or c + 1 > 7):
-                if b[endSq[0]][endSq[1]] != '--':
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
+    def getKnightMoves(self, r, c, moves):
+        for dr, dc in [(-1, -2), (-1, 2), (1, -2), (1, 2), (-2, -1), (-2, 1), (2, -1), (2, 1)]:
+            if 0 <= r+dr <= 7 and 0 <= c+dc <= 7:
+                newr, newc = r + dr, c + dc
+                if self.board[newr][newc][0] != self.board[r][c][0]:
+                    moves.append(Move((r, c), (newr, newc), self.board))
 
-        return validMoves
+    def getBishopMoves(self, r, c, moves):
+        for dr, dc in [(1, 1), (-1, 1), (1, -1), (-1, -1)]:
+            n = 1
+            while 0 <= r + dr * n <= 7 and 0 <= c + dc * n <= 7:
+                newr, newc = r + dr * n, c + dc * n
+                if self.board[newr][newc] == "--":
+                    moves.append(Move((r, c), (newr, newc), self.board))
+                    n += 1
+                else:
+                    if self.board[newr][newc][0] != self.board[r][c][0]:
+                        moves.append(Move((r, c), (newr, newc), self.board))
+                    break
 
-    def getRookMoves(self, r, c):
-        b = self.board
-        if self.whiteToMove:
-            turn = "w"
-        else:
-            turn = "b"
-        validMoves = []
-        disl = c
-        disr = 7 - c
-        dist = r
-        disb = 7 - r
+    def getQueenMoves(self, r, c, moves):
+        self.getBishopMoves(r, c, moves)
+        self.getRookMoves(r, c, moves)
 
-        # to left
-        for dc in range(1, disl + 1):
-            endSq = (r, c - dc)
-            if b[endSq[0]][endSq[1]] == '--':
-                move = Move((r, c), endSq, b)
-                validMoves.append(move)
-            else:
-                if b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-                break
-
-        # to right
-        for dc in range(1, disr + 1):
-            endSq = (r, c + dc)
-            if b[endSq[0]][endSq[1]] == '--':
-                move = Move((r, c), endSq, b)
-                validMoves.append(move)
-            else:
-                if b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-                break
-
-        # to top
-        for dr in range(1, dist + 1):
-            endSq = (r - dr, c)
-            if b[endSq[0]][endSq[1]] == '--':
-                move = Move((r, c), endSq, b)
-                validMoves.append(move)
-            else:
-                if b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-                break
-
-        # to bottom
-        for dr in range(1, disb + 1):
-            endSq = (r + dr, c)
-            if b[endSq[0]][endSq[1]] == '--':
-                move = Move((r, c), endSq, b)
-                validMoves.append(move)
-            else:
-                if b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-                break
-
-        return validMoves
-
-    def getKnightMoves(self, r, c):
-        b = self.board
-        if self.whiteToMove:
-            turn = "w"
-        else:
-            turn = "b"
-        validMoves = []
-        for dr in [-1, 1]:
-            for dc in [-2, 2]:
-                endSq = (r + dr, c + dc)
-                out_of_board = endSq[0] < 0 or endSq[0] > 7 or endSq[1] < 0 or endSq[1] > 7
-                if not out_of_board and b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-
-        for dr in [-2, 2]:
-            for dc in [-1, 1]:
-                endSq = (r + dr, c + dc)
-                out_of_board = endSq[0] < 0 or endSq[0] > 7 or endSq[1] < 0 or endSq[1] > 7
-                if not out_of_board and b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-
-        return validMoves
-
-    def getBishopMoves(self, r, c):
-        b = self.board
-        if self.whiteToMove:
-            turn = "w"
-        else:
-            turn = "b"
-        validMoves = []
-
-        disl = c
-        disr = 7 - c
-        dist = r
-        disb = 7 - r
-
-        # top-left
-        for d in range(1, min(disl, dist) + 1):
-            endSq = (r - d, c - d)
-            if b[endSq[0]][endSq[1]] == '--':
-                move = Move((r, c), endSq, b)
-                validMoves.append(move)
-            else:
-                if b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-                break
-
-        # top-right
-        for d in range(1, min(disr, dist) + 1):
-            endSq = (r - d, c + d)
-            if b[endSq[0]][endSq[1]] == '--':
-                move = Move((r, c), endSq, b)
-                validMoves.append(move)
-            else:
-                if b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-                break
-
-        # bottom-left
-        for d in range(1, min(disl, disb) + 1):
-            endSq = (r + d, c - d)
-            if b[endSq[0]][endSq[1]] == '--':
-                move = Move((r, c), endSq, b)
-                validMoves.append(move)
-            else:
-                if b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-                break
-
-        # bottom-right
-        for d in range(1, min(disr, disb) + 1):
-            endSq = (r + d, c + d)
-            if b[endSq[0]][endSq[1]] == '--':
-                move = Move((r, c), endSq, b)
-                validMoves.append(move)
-            else:
-                if b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-                break
-
-        return validMoves
-
-    def getKingMoves(self, r, c):
-        b = self.board
-        if self.whiteToMove:
-            turn = "w"
-        else:
-            turn = "b"
-        validMoves = []
+    def getKingMoves(self, r, c, moves):
         for dr in range(-1, 2):
             for dc in range(-1, 2):
-                endSq = (r + dr, c + dc)
-                out_of_board = endSq[0] < 0 or endSq[0] > 7 or endSq[1] < 0 or endSq[1] > 7
-                if not out_of_board and b[endSq[0]][endSq[1]][0] != turn:
-                    move = Move((r, c), endSq, b)
-                    validMoves.append(move)
-
-        return validMoves
-
-    def isCheck(self):
-        b = self.board
-        king = ()
-        for r in range(8):
-            for c in range(8):
-                if b[r][c] == self.turn+"k":
-                    king = (r, c)
-        r, c = king[0], king[1]
-
-        # Horizontally or Vertically in check (Rook / Queen)
-        disl = c
-        disr = 7 - c
-        dist = r
-        disb = 7 - r
-        # to left
-        for dc in range(1, disl + 1):
-            if b[r][c-dc][1] != '--':
-                if (b[r][c-dc][1] == 'r' or b[r][c-dc][1] == 'q') and not b[r][c-dc][0] == self.turn:
-                    return True
-                break
-        # to right
-        for dc in range(1, disr + 1):
-            if b[r][c - dc][1] != '--':
-                if (b[r][c + dc][1] == 'r' or b[r][c + dc][1] == 'q') and not b[r][c + dc][0] == self.turn:
-                    return True
-                break
-        # to top
-        for dr in range(1, dist + 1):
-            if b[r][c - dr][1] != '--':
-                if (b[r - dr][c][1] == 'r' or b[r - dr][c][1] == 'q') and not b[r - dr][c][0] == self.turn:
-                    return True
-                break
-        # to bottom
-        for dr in range(1, disb + 1):
-            if b[r][c - dr][1] != '--':
-                if (b[r + dr][c][1] == 'r' or b[r + dr][c][1] == 'q') and not b[r + dr][c][0] == self.turn:
-                    return True
-                break
-
-
-        # Diagonally in check (Bishop / Queen)
-
-        # Check with pawn
-
-        # Check with knight
-
-        # Kings in touch
-
+                if 0 <= r + dr <= 7 and 0 <= c + dc <= 7:
+                    newr, newc = r + dr, c + dc
+                    if self.board[newr][newc][0] != self.board[r][c][0]:
+                        moves.append(Move((r, c), (newr, newc), self.board))
 
 class Move:
     ranksToRows = {"1": 7, "2": 6, "3": 5, "4": 4, "5": 3, "6": 2, "7": 1, "8": 0}
@@ -405,6 +140,14 @@ class Move:
         self.endCol = endSq[1]
         self.movedPiece = board[self.startRow][self.startCol]
         self.capturedPiece = board[self.endRow][self.endCol]
+        self.moveID = self.startRow * 1000 + self.startCol * 100 + self.endRow * 10 + self.endCol
+
+    """Override the equals method"""
+
+    def __eq__(self, other):
+        if isinstance(other, Move):
+            return self.moveID == other.moveID
+        return False
 
     def getChessNotation(self):
         piece = self.movedPiece[1]
@@ -431,5 +174,3 @@ if __name__ == '__main__':
     # vals = [m.getChessNotation() for m in gs.getAllValidMoves()]
     # print(vals)
     # print(gs.isCheck())
-
-

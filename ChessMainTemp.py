@@ -38,8 +38,6 @@ def main():
     clock = p.time.Clock()
     screen.fill(p.Color('white'))
     gs = ChessEngine.GameState()
-    validMoves = gs.getValidMoves()
-    moveMade = False # when a move is made
     loadImages()  # only do this once, b4 the while loop
     running = True
     selectedSq = ()
@@ -58,9 +56,11 @@ def main():
                 if selectedSq:
                     #  make the move.
                     move = ChessEngine.Move(selectedSq, (row, col), gs.board)
-                    if move in validMoves:
+                    validMoves = gs.getPieceValidMoves(selectedSq[0], selectedSq[1])
+                    vals = [m.getChessNotation() for m in validMoves]
+                    # print(vals)
+                    if move.getChessNotation() in vals:
                         gs.makeMove(move)
-                        moveMade = True
 
                     # gs.makeMove(move)
                     selectedSq = ()  # deselect
@@ -69,15 +69,9 @@ def main():
                     if gs.board[row][col] != '--':
                         #  select the piece to move.
                         selectedSq = (row, col)
-
             elif e.type == p.KEYDOWN:
                 if e.key == p.K_LEFT:
                     gs.undoMove()
-                    moveMade = True
-
-        if moveMade:
-            validMoves = gs.getValidMoves()
-            moveMade = False
 
         #  update the board.
         drawGameState(screen, gs)
