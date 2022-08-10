@@ -7,6 +7,8 @@ responsible for
     and keeping a move log.
 """
 
+""" checks, checkmate and stalemate are now working fine (part 7) """
+
 import pygame as p
 from Chess import ChessEngine
 
