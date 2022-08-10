@@ -7,6 +7,8 @@ responsible for
     and keeping a move log.
 """
 
+""" checks, checkmate and stalemate are now working fine (part 7) """
+
 import pygame as p
 from Chess import ChessEngine
 
@@ -60,6 +62,7 @@ def main():
                     move = ChessEngine.Move(selectedSq, (row, col), gs.board)
                     if move in validMoves:
                         gs.makeMove(move)
+                        print(move.getChessNotation())
                         moveMade = True
 
                     # gs.makeMove(move)
@@ -101,7 +104,7 @@ Draws the squares on the board.
 
 
 def drawBoard(screen):
-    colors = [p.Color("white"), p.Color("#b39ae6")]
+    colors = [p.Color("#d5ede7"), p.Color("#6d857f")]
     for x in range(DIMENSION):
         for y in range(DIMENSION):
             color = colors[(x + y) % 2]
