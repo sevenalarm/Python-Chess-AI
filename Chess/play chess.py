@@ -1,19 +1,11 @@
 """
-this is the main driver file
-responsible for
-    handling user input
-    displaying the current GameState
-    determining current valid moves
-    and keeping a move log.
+RUN THIS to play 1v1 chess!
 """
 
 """ checks, checkmate and stalemate are now working fine (part 7) """
 
 import pygame as p
-
-from Chess import ChessEngine
-from SmartMoveFinder import *
-import time
+from Chess import Engine
 
 WIDTH = HEIGHT = 512
 DIMENSION = 8
@@ -42,7 +34,7 @@ def main():
     screen = p.display.set_mode((WIDTH, HEIGHT))
     clock = p.time.Clock()
     screen.fill(p.Color('white'))
-    gs = ChessEngine.GameState()
+    gs = Engine.GameState()
     validMoves = gs.getValidMoves()
     moveMade = False  # when a move is made
     doanim = False
@@ -50,18 +42,14 @@ def main():
     running = True
     selectedSq = ()
     over = False
-    pl1 = False  # True if human is playing white else False
-    pl2 = False  # Vice versa
 
     while running:
-        humanTurn = (gs.whiteToMove and pl1) or (not gs.whiteToMove and pl2)
-
         for e in p.event.get():
             if e.type == p.QUIT:
                 running = False
-            # handling the human turn
+
             elif e.type == p.MOUSEBUTTONDOWN:
-                if not over and humanTurn:
+                if not over:
                     #  getting the mouse input.
                     loc = p.mouse.get_pos()  # (x, y)
                     col = loc[0] // SQ_SIZE
@@ -70,13 +58,12 @@ def main():
                     if selectedSq:
                         for i in range(len(validMoves)):
                             #  make the move.
-                            move = ChessEngine.Move(selectedSq, (row, col), gs.board)
+                            move = Engine.Move(selectedSq, (row, col), gs.board)
                             if move == validMoves[i]:
                                 gs.makeMove(validMoves[i])
-                                print("Player goes:",move.getChessNotation())
-                                # print(f'Castle rights: wks:{gs.castle.wks} / wqs:{gs.castle.wqs} / bks:{gs.castle.bks} / bqs:{gs.castle.bqs}')
-                                # print_board(gs.board)
-                                print('-----------------------------------------------------------------')
+                                print(move.getChessNotation())
+                                print(f'Castle rights: wks:{gs.castle.wks} / wqs:{gs.castle.wqs} / bks:{gs.castle.bks} / bqs:{gs.castle.bqs}')
+
                                 moveMade = True
                                 doanim = True
 
@@ -95,38 +82,21 @@ def main():
                     doanim = False
 
                 if e.key == p.K_r:
-                    gs = ChessEngine.GameState()
+                    gs = Engine.GameState()
                     validMoves = gs.getValidMoves()
                     selectedSq = ()
                     moveMade = False
                     doanim = False
 
-        # AI moves
-        if not over and not humanTurn:
-            AImove = findbestmove(gs, validMoves)
-            # AImove = None
-            if AImove is None:
-                AImove = randmove(validMoves)
-                print("Randomized!!!!!!!!!!!")
-            gs.makeMove(AImove)
-            print("Compy goes:",AImove.getChessNotation())
-            # print(
-            #     f'Castle rights: wks:{gs.castle.wks} / wqs:{gs.castle.wqs} / bks:{gs.castle.bks} / bqs:{gs.castle.bqs}')
-
-            # print_board(gs.board)
-            print('---------')
-            moveMade = True
-            doanim = True
-
         if moveMade:
             if doanim:
-                animate(gs.moveLog[-1], screen, gs.board, clock)
+                # animate(gs.moveLog[-1], screen, gs.board, clock)
+                pass
             validMoves = gs.getValidMoves()
             moveMade = False
 
         #  update the board.
         drawGameState(screen, gs, validMoves, selectedSq)
-        # time.sleep(0.3)
         if gs.checkmate:
             over = True
             if gs.whiteToMove:
@@ -184,7 +154,7 @@ Draws the squares on the board.
 
 def drawBoard(screen):
     global colors
-    colors = [p.Color("white"), p.Color("grey")]
+    colors = [p.Color("white"), p.Color("#aca2ba")]
     for x in range(DIMENSION):
         for y in range(DIMENSION):
             color = colors[(x + y) % 2]
@@ -217,38 +187,31 @@ def animate(move, screen, board, clock):
     dc = move.endCol - move.startCol
     fps = 5  # frame per square
     framecount = (abs(dr) + abs(dc)) * fps
-    for f in range(framecount + 1):
-        r, c = (move.startRow + dr * f / framecount, move.startCol + dc * f / framecount)
+    for f in range(framecount+1):
+        r, c = (move.startRow + dr*f/framecount, move.startCol + dc*f/framecount)
         drawBoard(screen)
         drawPieces(screen, board)
         # erase the moved piece from its ending square
         color = colors[(move.endRow + move.endCol) % 2]
-        endsq = p.Rect(move.endCol * SQ_SIZE, move.endRow * SQ_SIZE, SQ_SIZE, SQ_SIZE)
+        endsq = p.Rect(move.endCol*SQ_SIZE, move.endRow*SQ_SIZE, SQ_SIZE, SQ_SIZE)
         p.draw.rect(screen, color, endsq)
         # blit the captured piece into the rectangle
         if move.capturedPiece != '--':
             screen.blit(IMAGES[move.capturedPiece], endsq)
         # draw the moving piece
-        screen.blit(IMAGES[move.movedPiece], p.Rect(c * SQ_SIZE, r * SQ_SIZE, SQ_SIZE, SQ_SIZE))
+        screen.blit(IMAGES[move.movedPiece], p.Rect(c*SQ_SIZE, r*SQ_SIZE, SQ_SIZE, SQ_SIZE))
         p.display.flip()
-        clock.tick(90)
+        clock.tick(60)
 
 
 def drawtext(screen, txt):
     font = p.font.SysFont("Calibri", 32, True, False)
     txtobj = font.render(txt, 0, p.Color('Grey'))
-    txtloc = p.Rect(0, 0, WIDTH, HEIGHT).move(WIDTH / 2 - txtobj.get_width() / 2, HEIGHT / 2 - txtobj.get_height() / 2)
+    txtloc = p.Rect(0,0,WIDTH, HEIGHT).move(WIDTH/2 - txtobj.get_width()/2, HEIGHT/2 - txtobj.get_height()/2)
     screen.blit(txtobj, txtloc)
     txtobj = font.render(txt, 0, p.Color('Black'))
     screen.blit(txtobj, txtloc.move(2, 2))
 
-
-def print_board(board):
-    for r in board:
-        print(r)
-
-
 if __name__ == '__main__':
+    print()
     main()
-
-
